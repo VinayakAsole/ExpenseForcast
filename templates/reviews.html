@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Review <span class="text-primary">& Support</span> Hub</h1>
+        <p class="text-secondary mt-1">Help us evolve the ExpenWise AI by sharing your experience and feedback.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Review Form -->
+    <div class="col-lg-5">
+        <div class="floating-card p-5 h-100 border-start-neon">
+            <h4 class="fw-bold mb-4 font-outfit">Submit Feedback</h4>
+            <form id="review-form" class="space-y-4">
+                <div class="mb-4">
+                    <label class="small text-secondary fw-bold uppercase tracking-widest mb-3 d-block">Experience Rating</label>
+                    <div class="d-flex gap-3 fs-3" id="star-rating">
+                        <i data-lucide="star" class="star-icon cursor-pointer text-secondary" data-value="1"></i>
+                        <i data-lucide="star" class="star-icon cursor-pointer text-secondary" data-value="2"></i>
+                        <i data-lucide="star" class="star-icon cursor-pointer text-secondary" data-value="3"></i>
+                        <i data-lucide="star" class="star-icon cursor-pointer text-secondary" data-value="4"></i>
+                        <i data-lucide="star" class="star-icon cursor-pointer text-secondary" data-value="5"></i>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="small text-secondary fw-bold uppercase tracking-widest mb-2 d-block">App Category</label>
+                    <select id="review-category" class="form-select rounded-4 py-3 bg-body-tertiary border-0 shadow-none px-3">
+                        <option value="General">General Experience</option>
+                        <option value="UI & Design">UI & Design (Holographic)</option>
+                        <option value="AI Insights">AI Predictions & Accuracy</option>
+                        <option value="Investments">Investment Tracking</option>
+                        <option value="Bug Report">Technical Issue / Bug</option>
+                    </select>
+                </div>
+
+                <div class="mb-5">
+                    <label class="small text-secondary fw-bold uppercase tracking-widest mb-2 d-block">Your Comments</label>
+                    <textarea id="review-comment" class="form-control rounded-4 py-3 bg-body-tertiary border-0 shadow-none px-3" rows="4" placeholder="How can we make ExpenWise better?"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-soft">
+                    Submit Secure Review
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Wall of Praise / Recent Reviews -->
+    <div class="col-lg-7">
+        <div class="floating-card p-0 h-100 overflow-hidden">
+            <div class="px-5 py-4 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold m-0 font-outfit">The Wall of Praise</h5>
+                <span class="badge-custom badge-forecasted">Community Pulse</span>
+            </div>
+            <div id="reviews-container" class="p-5 space-y-4 overflow-y-auto" style="max-height: 500px;">
+                <!-- Reviews will load here -->
+                <div class="text-center py-5 opacity-50">
+                    <p class="small uppercase tracking-widest">Loading Neural Feed...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .star-icon { transition: all 0.2s; }
+    .star-icon.active { color: var(--neon-gold) !important; fill: var(--neon-gold); filter: drop-shadow(0 0 8px var(--neon-gold)); }
+    .star-icon:hover { transform: scale(1.2); }
+    #reviews-container::-webkit-scrollbar { width: 4px; }
+    #reviews-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedRating = 0;
+
+    // Star Rating Logic — Use Delegation for SVG compatibility
+    document.getElementById('star-rating').addEventListener('click', (e) => {
+        const star = e.target.closest('[data-value]');
+        if (star) {
+            selectedRating = parseInt(star.getAttribute('data-value'));
+            updateStars();
+        }
+    });
+
+    const updateStars = () => {
+        document.querySelectorAll('#star-rating i, #star-rating svg').forEach(star => {
+            const container = star.closest('[data-value]');
+            if (container) {
+                const val = parseInt(container.getAttribute('data-value'));
+                star.classList.toggle('active', val <= selectedRating);
+            }
+        });
+    };
+
+    const fetchReviews = async () => {
+        try {
+            const { data } = await API.get('/reviews');
+            const container = document.getElementById('reviews-container');
+            container.innerHTML = data.reviews.map(r => `
+                <div class="p-4 rounded-5 border bg-body-tertiary bg-opacity-50 animate-fade-in mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-bold font-outfit">${r.name}</span>
+                            <span class="badge-custom px-2 py-0 x-small" style="font-size: 0.65rem;">${r.category}</span>
+                        </div>
+                        <div class="text-warning">
+                            ${Array(r.rating).fill('<i data-lucide="star" style="width: 14px; height: 14px; fill: currentColor;"></i>').join('')}
+                        </div>
+                    </div>
+                    <p class="small text-secondary m-0">"${r.comment || 'No comment provided.'}"</p>
+                    <div class="text-end mt-2" style="font-size: 0.6rem; opacity: 0.4;">
+                        ${new Date(r.created_at).toLocaleDateString()}
+                    </div>
+                </div>
+            `).join('') || '<div class="text-center py-5 opacity-50">No reviews yet. Be the first!</div>';
+            lucide.createIcons();
+        } catch (err) { console.error(err); }
+    };
+
+    document.getElementById('review-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (selectedRating === 0) return alert('Please select a star rating.');
+
+        const payload = {
+            rating: selectedRating,
+            category: document.getElementById('review-category').value,
+            comment: document.getElementById('review-comment').value
+        };
+
+        try {
+            await API.post('/reviews', payload);
+            alert('Review submitted! Thank you for helping us grow.');
+            document.getElementById('review-form').reset();
+            selectedRating = 0;
+            updateStars();
+            fetchReviews();
+        } catch (err) { 
+            console.error(err);
+            alert('Failed to submit review: ' + (err.response?.data?.error || 'Unknown error')); 
+        }
+    });
+
+    fetchReviews();
+</script>
+{% endblock %}

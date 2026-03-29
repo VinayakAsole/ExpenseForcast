@@ -1,0 +1,193 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Savings Goals</h1>
+        <p class="text-secondary mt-1">Visualize your dreams, set targets, and monitor your progress towards financial freedom.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-soft" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+             <i data-lucide="plus-circle" size="18" class="me-2"></i> Define New Goal
+        </button>
+    </div>
+</div>
+
+<div id="goals-container" class="row g-4 mb-5">
+    <!-- Dynamic goal cards -->
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary opacity-50 mb-3" role="status"></div>
+        <p class="text-secondary small fw-medium tracking-widest uppercase">Fetching your financial dreams...</p>
+    </div>
+</div>
+
+<div class="modal fade" id="addGoalModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+             <div class="modal-header border-0 p-5 pb-0">
+                <h3 class="fw-bold font-outfit m-0">Launch Goal</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-5">
+                <form id="goal-form" class="space-y-4">
+                    <input type="hidden" id="goal-id">
+                    <div class="mb-4">
+                        <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Goal Name</label>
+                        <input type="text" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="goal-name" placeholder="e.g. New Macbook Pro, Home Renovations" required>
+                    </div>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Target Amount (₹)</label>
+                            <input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="goal-target" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Initial Savings (₹)</label>
+                            <input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="goal-initial" value="0">
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Target Date</label>
+                            <input type="date" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="goal-deadline" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Category</label>
+                            <select id="goal-category" class="form-select rounded-4 py-3 bg-body-tertiary border-0">
+                                <option value="Short-term">Short-term</option>
+                                <option value="Medium-term">Medium-term</option>
+                                <option value="Long-term">Long-term</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-soft">
+                        Activate Saving Plan
+                    </button>
+                    <p class="text-center text-secondary small mt-3">We will track your progress based on this target.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const fetchGoals = async () => {
+        try {
+            const { data } = await API.get('/goals/');
+            const container = document.getElementById('goals-container');
+            container.innerHTML = data.map(goal => {
+                const perc = Math.min(100, (goal.current_amount / goal.target_amount) * 100);
+                const isAchieved = perc >= 100;
+                const deadline = new Date(goal.deadline);
+                const diffTime = deadline - new Date();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                return `
+                    <div class="col-lg-4 col-md-6">
+                        <div class="floating-card h-100 relative overflow-hidden group">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                 <div class="goal-icon-box text-primary p-3 rounded-4" style="width: 50px; height: 50px; display: flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="target" size="24"></i>
+                                </div>
+                                <span class="badge-custom badge-forecasted px-3 py-1 fw-bold uppercase tracking-widest" style="font-size:0.7rem;">${goal.category}</span>
+                            </div>
+                            
+                            <h4 class="fw-bold tracking-tight mb-2 font-outfit" style="color: var(--text-main);">${goal.name}</h4>
+                            <p class="text-secondary small mb-4 font-inter"><i data-lucide="calendar" size="14" class="me-1"></i> ${diffDays > 0 ? diffDays + ' days remaining' : 'Deadline passed'}</p>
+                            
+                            <div class="mb-2 d-flex justify-content-between align-items-end">
+                                <div>
+                                    <span class="text-secondary small uppercase tracking-widest fw-bold" style="font-size: 0.65rem;">Current Solid</span>
+                                    <h3 class="fw-bold mb-0 font-outfit" style="color: var(--neon-cyan);">₹${goal.current_amount.toLocaleString()}</h3>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-secondary small uppercase tracking-widest fw-bold" style="font-size: 0.65rem;">Target</span>
+                                    <h5 class="fw-bold mb-0 text-secondary opacity-75 font-outfit">₹${goal.target_amount.toLocaleString()}</h5>
+                                </div>
+                            </div>
+                            
+                            <div class="progress rounded-pill overflow-hidden shadow-none bg-body-tertiary my-4" style="height: 10px; border: 1px solid var(--card-border);">
+                                <div class="progress-bar rounded-pill" style="width: ${perc}%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); box-shadow: 0 0 10px rgba(0,245,255,0.4);"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                             <span class="small fw-bold ${isAchieved ? 'text-success' : 'text-primary'} font-outfit" style="letter-spacing: 0.05em;">${perc.toFixed(1)}% ACHIEVED</span>
+                             <div class="btn-group gap-2">
+                                 <button onclick="updateGoal('${goal.id}', ${goal.current_amount + 500})" class="btn btn-soft-primary btn-sm rounded-pill px-3 py-1 small fw-bold">+ ₹500</button>
+                                 <button onclick='editGoal(${JSON.stringify(goal)})' class="btn btn-soft-primary btn-sm rounded-circle p-2 border-0"><i data-lucide="edit-3" size="14"></i></button>
+                                 <button onclick="deleteGoal('${goal.id}')" class="btn btn-soft-danger btn-sm rounded-circle p-2 border-0"><i data-lucide="trash-2" size="14"></i></button>
+                             </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="col-12 text-center py-5 opacity-50"><h4>No goals defined... what are you saving for?</h4></div>';
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    document.getElementById('goal-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('goal-id').value;
+        const payload = {
+            name: e.target['goal-name'].value,
+            target_amount: e.target['goal-target'].value,
+            current_amount: e.target['goal-initial'].value,
+            deadline: e.target['goal-deadline'].value,
+            category: e.target['goal-category'].value
+        };
+
+        try {
+            if (id) {
+                await API.put('/goals/' + id, payload);
+            } else {
+                await API.post('/goals/', payload);
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addGoalModal'));
+            modal.hide();
+            e.target.reset();
+            document.getElementById('goal-id').value = '';
+            fetchGoals();
+        } catch (err) {
+            alert('Operation failed');
+        }
+    });
+
+    const editGoal = (goal) => {
+        document.getElementById('goal-id').value = goal.id;
+        document.getElementById('goal-name').value = goal.name;
+        document.getElementById('goal-target').value = goal.target_amount;
+        document.getElementById('goal-initial').value = goal.current_amount;
+        document.getElementById('goal-deadline').value = goal.deadline;
+        document.getElementById('goal-category').value = goal.category;
+        
+        const modal = new bootstrap.Modal(document.getElementById('addGoalModal'));
+        document.querySelector('#addGoalModal h3').innerText = 'Edit Savings Goal';
+        modal.show();
+    };
+
+    const updateGoal = async (id, amount) => {
+        try {
+            await API.put('/goals/' + id, { current_amount: amount });
+            fetchGoals();
+        } catch (err) { alert('Update failed'); }
+    };
+
+    const deleteGoal = async (id) => {
+        if (confirm('Delete this goal?')) {
+            try {
+                await API.delete('/goals/' + id);
+                fetchGoals();
+            } catch (err) { alert('Deletion failed'); }
+        }
+    };
+
+    fetchGoals();
+</script>
+{% endblock %}

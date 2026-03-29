@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ExpenWise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-mode" style="background: var(--bg-main); overflow-x: hidden;">
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--  HOLOGRAPHIC 3D CANVAS BACKGROUND              -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <canvas id="holo-canvas"></canvas>
+    
+    <div class="bg-3d-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+
+    <div class="container-fluid p-0 min-vh-100 d-flex position-relative z-1">
+        <div class="row w-100 g-0">
+
+            <!-- Left Side: Hero (Futuristic Panel) -->
+            <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-between p-5 relative overflow-hidden" style="background: rgba(var(--bg-card-rgb), 0.4); backdrop-filter: blur(20px); border-right: 1px solid var(--card-border);">
+                <div class="animate-fade-in-up">
+                    <div class="d-flex align-items-center gap-3 mb-5">
+                        <div class="p-2 rounded-4" style="background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); box-shadow: 0 0 20px rgba(0,245,255,0.4);">
+                            <i data-lucide="trending-up" style="color: white; width: 28px; height: 28px;"></i>
+                        </div>
+                        <h2 class="fw-bold m-0 tracking-tighter font-outfit" style="color: var(--text-main); letter-spacing: -1px;">EXPENWISE<span style="color: var(--neon-cyan);">AI</span></h2>
+                    </div>
+                    <h1 class="display-2 fw-bold font-outfit mb-4" style="color: var(--text-main); line-height: 0.95;">Master Your <br><span style="background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Financial Destiny.</span></h1>
+                    <p class="fs-4 text-secondary max-w-lg mb-5 opacity-75">The ultimate smart assistant for expense forecasting, budget control, and AI-driven insights.</p>
+                </div>
+                
+                <div class="floating-card p-5 animate-fade-in-up delay-200" style="max-width: 550px;">
+                    <div class="mb-4">
+                        <i data-lucide="quote" size="40" class="opacity-25" style="color: var(--neon-cyan);"></i>
+                    </div>
+                    <p class="fs-4 italic mb-4 font-outfit" style="color: var(--text-main); line-height: 1.4;">"This predictive AI identified my spending patterns in 48 hours. Changed my life!"</p>
+                    <div class="d-flex align-items-center gap-3 mt-5">
+                        <div class="avatar p-1 rounded-circle border border-2 border-info" style="width: 60px; height: 60px;">
+                            <img src="https://ui-avatars.com/api/?name=James+R&background=00f5ff&color=fff" class="rounded-circle w-100 h-100">
+                        </div>
+                        <div>
+                             <p class="fw-bold m-0" style="color: var(--text-main); font-size: 1.1rem;">James R.</p>
+                             <p class="text-secondary m-0 small uppercase tracking-widest fw-bold">Financial Architect</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Form (Glass Card) -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center p-5">
+                <div class="floating-card w-full max-w-sm p-5 border-0" style="background: rgba(var(--bg-card-rgb), 0.7); backdrop-filter: blur(25px);">
+                    <div class="text-center text-lg-start mb-5 animate-fade-in-up">
+                        <h2 class="display-6 fw-bold font-outfit mb-2" style="color: var(--text-main);">Welcome Core</h2>
+                        <p class="text-secondary small fw-medium uppercase tracking-widest">Neural access required.</p>
+                    </div>
+                    
+                    <button type="button" id="google-login-btn" class="btn btn-outline-secondary w-100 py-3 rounded-4 fs-6 fw-bold mb-4 d-flex align-items-center justify-content-center gap-3" style="border-color: rgba(255,255,255,0.1); color: var(--text-main); background: rgba(255,255,255,0.03);">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 22px; height: 22px;">
+                        Sync with Google
+                    </button>
+                    
+                    <div class="d-flex align-items-center mb-4 opacity-25">
+                        <hr class="flex-grow-1 m-0" style="border-color: var(--text-main);">
+                        <span class="px-3 text-secondary small fw-bold uppercase tracking-widest">or direct entry</span>
+                        <hr class="flex-grow-1 m-0" style="border-color: var(--text-main);">
+                    </div>
+
+                    <form id="login-form" class="space-y-4">
+                        <div class="mb-4">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Neural ID (Email)</label>
+                            <input type="email" class="form-control rounded-4 py-3 bg-white-5 px-4 border-0" id="email" placeholder="name@expenwise.ai" required style="color: var(--text-main);">
+                        </div>
+                        <div class="mb-5">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Secure Key (Password)</label>
+                            <input type="password" class="form-control rounded-4 py-3 bg-white-5 px-4 border-0" id="password" placeholder="••••••••" required style="color: var(--text-main);">
+                        </div>
+                        
+                        <div id="error-alert" class="badge-custom badge-negative w-100 d-none mb-4 py-3"></div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fs-5 fw-bold shadow-soft" style="background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); border: 0;">
+                             Engage Dashboard
+                        </button>
+                    </form>
+                    
+                    <p class="mt-5 text-center text-secondary small">New interface user? <a href="/register" class="fw-bold text-decoration-none" style="color: var(--neon-cyan);">Initialize account</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwsJ30SnKHIZLJ6rqHKfGadY_QHvlISyo",
+            authDomain: "phisher-f3680.firebaseapp.com",
+            projectId: "phisher-f3680"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const alert = document.getElementById('error-alert');
+            
+            btn.disabled = true;
+            btn.textContent = 'Authenticating...';
+            alert.classList.add('d-none');
+
+            try {
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(
+                    e.target.email.value, 
+                    e.target.password.value
+                );
+                
+                btn.textContent = 'Syncing...';
+                const res = await API.post('/auth/firebase-login', {
+                    email: userCredential.user.email,
+                    name: "User",
+                    uid: userCredential.user.uid
+                });
+                
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data));
+                window.location.href = '/';
+            } catch (err) {
+                console.error(err);
+                alert.textContent = err.message || 'Login failed.';
+                alert.classList.remove('d-none');
+                btn.disabled = false;
+                btn.textContent = 'Engage Dashboard';
+            }
+        });
+
+        document.getElementById('google-login-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('google-login-btn');
+            const alert = document.getElementById('error-alert');
+            const provider = new firebase.auth.GoogleAuthProvider();
+            btn.disabled = true;
+            btn.innerHTML = 'Connecting...';
+            alert.classList.add('d-none');
+            try {
+                const userCredential = await firebase.auth().signInWithPopup(provider);
+                btn.innerHTML = 'Syncing...';
+                const res = await API.post('/auth/firebase-login', {
+                    email: userCredential.user.email,
+                    name: userCredential.user.displayName || "Explorer",
+                    uid: userCredential.user.uid
+                });
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data));
+                window.location.href = '/';
+            } catch (err) {
+                console.error(err);
+                alert.textContent = err.message || 'Google Sign-In failed.';
+                alert.classList.remove('d-none');
+                btn.disabled = false;
+                btn.innerHTML = 'Sync with Google';
+            }
+        });
+
+        // ── HOLOGRAPHIC 3D CANVAS CODE ──
+        (function initHoloCanvas() {
+            const canvas = document.getElementById('holo-canvas');
+            const ctx = canvas.getContext('2d');
+            let isDarkMode = true;
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const graphs = [
+                { color: '#ff00ff', lightColor: '#8b5cf6', shadow: 'rgba(255,0,255,0.7)', points: [], offset: 0,   speed: 0.8 },
+                { color: '#00f5ff', lightColor: '#6366f1', shadow: 'rgba(0,245,255,0.7)',  points: [], offset: 60,  speed: 0.6 },
+                { color: '#ffd700', lightColor: '#f59e0b', shadow: 'rgba(255,215,0,0.7)',  points: [], offset: 120, speed: 1.0 },
+            ];
+
+            function genPoints(seed, count) {
+                const pts = [];
+                let y = 0.5;
+                for (let i = 0; i < count; i++) {
+                    y += (Math.sin(i * 0.3 + seed) * 0.06) + (Math.random() - 0.5) * 0.04;
+                    pts.push(Math.max(0.05, Math.min(0.95, y)));
+                }
+                return pts;
+            }
+            graphs.forEach((g, i) => { g.points = genPoints(i * 2.5, 120); });
+
+            let frame = 0, gridOffset = 0;
+            const gridMain = '0, 245, 255', gridSub = '168, 85, 247';
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const w = canvas.width, h = canvas.height, hor = h * 0.68, vp = { x: w / 2, y: hor };
+
+                for (let i = 0; i <= 16; i++) {
+                    const x = (i / 16) * w;
+                    const grad = ctx.createLinearGradient(vp.x, hor, x, h);
+                    grad.addColorStop(0, `rgba(${gridMain}, 0)`);
+                    grad.addColorStop(1, i % 4 === 0 ? `rgba(${gridMain}, 0.2)` : `rgba(${gridSub}, 0.1)`);
+                    ctx.beginPath(); ctx.moveTo(vp.x, hor); ctx.lineTo(x, h);
+                    ctx.strokeStyle = grad; ctx.lineWidth = i % 4 === 0 ? 1 : 0.5; ctx.stroke();
+                }
+                gridOffset = (gridOffset + 0.2) % (h / 14);
+                for (let i = 0; i <= 15; i++) {
+                    const progress = (i / 14) + gridOffset / (h / 14);
+                    const clampedP = progress % 1;
+                    const y = hor + Math.pow(clampedP, 1.5) * (h - hor);
+                    const lineWidth = clampedP * (w * 0.8);
+                    ctx.beginPath(); ctx.moveTo(vp.x - lineWidth/2, y); ctx.lineTo(vp.x + lineWidth/2, y);
+                    ctx.strokeStyle = `rgba(${gridMain}, ${clampedP * 0.3})`;
+                    ctx.lineWidth = 0.5; ctx.stroke();
+                }
+
+                graphs.forEach(g => {
+                    const pts = g.points, len = pts.length, scrollIdx = (frame * g.speed * 0.2 + g.offset) % len;
+                    ctx.beginPath(); ctx.shadowColor = g.shadow; ctx.shadowBlur = 15; ctx.lineWidth = 2; ctx.strokeStyle = g.color;
+                    for (let i = 0; i < w; i += 5) {
+                        const idx = (Math.floor(scrollIdx) + Math.floor(i / 5)) % len;
+                        const y = (hor * 0.15) + pts[idx] * (hor * 0.45);
+                        if (i === 0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+                    }
+                    ctx.stroke(); ctx.shadowBlur = 0;
+                });
+                
+                const vig = ctx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*0.9);
+                vig.addColorStop(0, 'rgba(2,5,16,0)'); vig.addColorStop(1, 'rgba(2,5,16,0.9)');
+                ctx.fillStyle = vig; ctx.fillRect(0, 0, w, h);
+                frame++; requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        document.querySelectorAll('.floating-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const r = card.getBoundingClientRect();
+                card.style.transform = `translateY(-10px) rotateX(${-((e.clientY - r.top)/r.height - 0.5)*10}deg) rotateY(${((e.clientX - r.left)/r.width - 0.5)*10}deg) scale(1.02)`;
+                card.style.transition = 'transform 0.1s ease-out';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) rotateX(0) rotateY(0) scale(1)';
+                card.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            });
+        });
+    </script>
+</body>
+</html>

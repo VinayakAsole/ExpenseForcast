@@ -1,0 +1,231 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .market-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        box-shadow: var(--card-shadow);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .market-card:hover { transform: translateY(-5px); }
+    
+    .chart-container-wrapper {
+        height: 600px; /* Much taller as requested */
+        width: 100%;
+        border-radius: 24px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    #tradingview_widget {
+        height: 100%;
+        width: 100%;
+    }
+
+    .search-orb {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 999px;
+        padding: 12px 24px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .search-orb input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .search-orb i { color: var(--primary); }
+
+    .trending-tag {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .trending-tag:hover { background: var(--primary); color: white; }
+</style>
+
+<div class="row mb-4 animate-3d">
+    <div class="col-12 text-center mt-2">
+        <h1 class="display-6 fw-bold font-outfit mb-3">Investment <span class="text-primary">Intelligence</span></h1>
+        
+        <div class="search-orb mb-3">
+            <i data-lucide="search" size="20"></i>
+            <input type="text" id="stock-search" placeholder="Search Stocks (e.g. RELIANCE, AAPL, TCS)...">
+            <kbd class="bg-light text-muted border px-2 py-1 rounded small">Enter</kbd>
+        </div>
+
+        <div class="d-flex justify-content-center gap-4 mb-4">
+            <div class="form-check form-check-inline small fw-bold text-muted">
+                <input class="form-check-input" type="radio" name="marketFilter" id="filterNSE" value="NSE" checked>
+                <label class="form-check-label" for="filterNSE">NSE</label>
+            </div>
+            <div class="form-check form-check-inline small fw-bold text-muted">
+                <input class="form-check-input" type="radio" name="marketFilter" id="filterBSE" value="BSE">
+                <label class="form-check-label" for="filterBSE">BSE</label>
+            </div>
+            <div class="form-check form-check-inline small fw-bold text-muted">
+                <input class="form-check-input" type="radio" name="marketFilter" id="filterGlobal" value="GLOBAL">
+                <label class="form-check-label" for="filterGlobal">Global</label>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <span class="trending-tag" onclick="searchStock('RELIANCE')">RELIANCE</span>
+            <span class="trending-tag" onclick="searchStock('AAPL')">APPLE</span>
+            <span class="trending-tag" onclick="searchStock('TCS')">TCS</span>
+            <span class="trending-tag" onclick="searchStock('NVDA')">NVIDIA</span>
+            <span class="trending-tag" onclick="searchStock('HDFCBANK')">HDFC BANK</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-12">
+        <div class="chart-container-wrapper shadow-lg border-0 animate-3d">
+            <div id="tradingview_widget"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="market-card p-4">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 id="stat-name-1" class="text-muted small uppercase tracking-widest">RELIANCE</h6>
+                <div id="badge-1" class="chart-badge">NSE</div>
+            </div>
+            <div id="stat-price-1" class="fs-3 fw-bold font-outfit">Loading...</div>
+            <div id="stat-change-1" class="small mt-1 fw-medium text-success">Real-time Feed</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="market-card p-4">
+             <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 id="stat-name-2" class="text-muted small uppercase tracking-widest">APPLE</h6>
+                <div id="badge-2" class="chart-badge">NASDAQ</div>
+            </div>
+            <div id="stat-price-2" class="fs-3 fw-bold font-outfit">Loading...</div>
+            <div class="small mt-1 text-muted">Global Price</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="market-card p-4">
+             <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 id="stat-name-3" class="text-muted small uppercase tracking-widest">TCS</h6>
+                <div id="badge-3" class="chart-badge">NSE</div>
+            </div>
+            <div id="stat-price-3" class="fs-3 fw-bold font-outfit">Loading...</div>
+            <div class="small mt-1 text-muted">Safe Haven</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="market-card p-4 h-100 bg-primary text-white border-0">
+            <h6 class="text-white text-opacity-75 small uppercase tracking-widest mb-2">Portfolio Forecast</h6>
+            <div class="fs-3 fw-bold font-outfit">BULLISH</div>
+            <div class="small mt-1 opacity-75">AI predicts 4.2% growth</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    let tvWidget = null;
+    
+    function initTradingView(symbol = "NSE:RELIANCE") {
+        const isDark = !document.body.classList.contains('light-mode');
+        
+        // Clear previous widget
+        document.getElementById('tradingview_widget').innerHTML = '';
+
+        tvWidget = new TradingView.widget({
+            "autosize": true,
+            "symbol": symbol,
+            "interval": "D",
+            "timezone": "Asia/Kolkata",
+            "theme": isDark ? "dark" : "light",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": isDark ? "#050e23" : "#f8faff",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview_widget"
+        });
+    }
+
+    // Listen for theme toggle event
+    window.addEventListener('themechange', (e) => {
+        const currentSymbol = tvWidget ? tvWidget.options?.symbol || "NSE:RELIANCE" : "NSE:RELIANCE";
+        setTimeout(() => initTradingView(currentSymbol), 50);
+    });
+
+    async function fetchPriceProxy(symbol, elId, nameId, badgeId) {
+        try {
+            const res = await fetch(`/api/proxy/stock/${symbol}`);
+            const data = await res.json();
+            if (data.price) {
+                document.getElementById(elId).innerText = (data.currency === 'INR' ? '₹' : '$') + data.price.toLocaleString(undefined, {minimumFractionDigits: 2});
+                if (nameId) document.getElementById(nameId).innerText = symbol.toUpperCase();
+                if (badgeId) document.getElementById(badgeId).innerText = data.currency === 'INR' ? 'NSE' : 'US';
+            }
+        } catch (e) { 
+            console.error(e);
+            document.getElementById(elId).innerText = '₹---';
+        }
+    }
+
+    function searchStock(sym) {
+        if (!sym) return;
+        
+        const filter = document.querySelector('input[name="marketFilter"]:checked').value;
+        let tvSym = sym.toUpperCase();
+        
+        if (filter === 'NSE') {
+            tvSym = "NSE:" + tvSym;
+        } else if (filter === 'BSE') {
+            tvSym = "BSE:" + tvSym;
+        } else if (filter === 'GLOBAL') {
+            // Check if it's NASDAQ or NYSE, default to NASDAQ
+            tvSym = "NASDAQ:" + tvSym;
+        }
+        
+        initTradingView(tvSym);
+        fetchPriceProxy(sym + (filter !== 'GLOBAL' ? '.NS' : ''), 'stat-price-1', 'stat-name-1', 'badge-1');
+    }
+
+    document.getElementById('stock-search').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchStock(e.target.value);
+    });
+
+    function loadAll() {
+        fetchPriceProxy('RELIANCE', 'stat-price-1');
+        fetchPriceProxy('AAPL', 'stat-price-2');
+        fetchPriceProxy('TCS', 'stat-price-3');
+    }
+
+    // Initial Load
+    initTradingView();
+    loadAll();
+    setInterval(loadAll, 30000); // 30 second refresh
+</script>
+{% endblock %}

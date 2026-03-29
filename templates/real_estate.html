@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4 animate-3d">
+    <div class="col-12 text-center mt-2">
+        <h1 class="display-6 fw-bold font-outfit mb-3">Real Estate <span class="text-primary">Intelligence</span></h1>
+        <p class="text-secondary">Track your property values and explore global real estate trends.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="glass-card p-0 shadow-lg border-0 overflow-hidden" style="height: 600px;">
+            <!-- TradingView Real Estate / Global Markets Widget -->
+            <div id="tradingview_real_estate" style="height: 100%; width: 100%;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="floating-card p-4 mb-4 h-100">
+            <h5 class="fw-bold mb-4"><i data-lucide="home" class="me-2 text-primary"></i> Property Tracker</h5>
+            <div class="mb-4">
+                <label class="small text-muted uppercase tracking-widest mb-2 d-block">ESTIMATED PORTFOLIO VALUE</label>
+                <div class="fs-2 fw-bold font-outfit text-dark">₹4.25 Cr</div>
+                <div class="small text-success fw-bold">+12.4% <span class="text-muted fw-normal">this year</span></div>
+            </div>
+            
+            <div class="p-3 rounded-4 bg-light mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Mumbai Residential</span>
+                    <span class="small text-primary">↑ 8%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-primary" style="width: 75%"></div>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded-4 bg-light">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold">Bangalore Tech Hub</span>
+                    <span class="small text-primary">↑ 15%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-top">
+                <button class="btn btn-primary w-100 py-3 rounded-4 fw-bold">Add New Property</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <div class="stat-icon-box mx-auto mb-3 bg-primary bg-opacity-10 text-primary">
+                <i data-lucide="trending-up"></i>
+            </div>
+            <h6 class="fw-bold">Appreciation Hub</h6>
+            <p class="small text-muted mb-0">Smart AI calculates ROI based on local registry data.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <div class="stat-icon-box mx-auto mb-3 bg-success bg-opacity-10 text-success">
+                <i data-lucide="key"></i>
+            </div>
+            <h6 class="fw-bold">Rental Yields</h6>
+            <p class="small text-muted mb-0">Track monthly rent and maintenance costs automatically.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 text-center">
+            <div class="stat-icon-box mx-auto mb-3 bg-info bg-opacity-10 text-info">
+                <i data-lucide="map"></i>
+            </div>
+            <h6 class="fw-bold">Market Heatmap</h6>
+            <p class="small text-muted mb-0">Visualize property price trends across top 10 Indian cities.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    new TradingView.widget({
+        "autosize": true,
+        "symbol": "ECONOMICS:INPRINX", // India Property Price Index
+        "interval": "D",
+        "timezone": "Etc/UTC",
+        "theme": document.body.classList.contains('dark-mode') ? "dark" : "light",
+        "style": "2",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "allow_symbol_change": true,
+        "container_id": "tradingview_real_estate"
+    });
+</script>
+{% endblock %}

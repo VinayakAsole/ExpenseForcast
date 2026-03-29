@@ -1,0 +1,172 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Monthly Budgeting</h1>
+        <p class="text-secondary mt-1">Set limits, stay focused, and achieve your financial targets.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="d-flex gap-2 justify-content-md-end">
+             <input type="month" id="selected-month" class="form-control rounded-pill border-0 shadow-sm w-auto px-4" value="{{ current_month }}">
+             <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editBudgetModal">
+                 <i data-lucide="edit-3" size="18" class="me-2"></i> Update Budget
+             </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="floating-card text-center overflow-hidden">
+             <div class="stat-icon-health p-3 rounded-4 mx-auto mb-4" style="width: 60px; height: 60px; display: flex; align-items:center; justify-content:center;">
+                <i data-lucide="target" size="24"></i>
+            </div>
+            <p class="text-secondary fw-bold small mb-2 uppercase tracking-widest">PROJECTED LIMIT</p>
+            <h2 id="total-budget" class="fw-bold fs-1 tracking-tight font-outfit" style="color: var(--neon-cyan);">₹0</h2>
+            <div id="usage-alert" class="badge-custom badge-healthy d-none mt-4 mx-auto" style="width: fit-content;">
+                 WITHIN LIMIT
+            </div>
+            <p id="remaining-info" class="text-secondary small mt-4 opacity-75">Loading budget status...</p>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="floating-card h-100">
+            <h4 class="section-heading mb-5">Category-Wise Breakdown</h4>
+            <div id="category-budget-list" class="space-y-5">
+                <!-- Dynamic progress bars -->
+                <p class="text-secondary text-center py-5 opacity-50">Checking your category limits...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="editBudgetModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg">
+             <div class="modal-header border-0 p-5 pb-0">
+                <h3 class="fw-bold font-outfit m-0">Configure Budget</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-5">
+                <form id="budget-form">
+                    <div class="mb-4">
+                        <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Global Monthly Budget (₹)</label>
+                        <input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="total_budget_input" required>
+                    </div>
+                    
+                    <p class="small fw-bold text-secondary mb-3 uppercase tracking-widest mt-5">Category Limits (Optional)</p>
+                    <div id="cat-inputs" class="space-y-3">
+                         <!-- Dynamically populated or static -->
+                         <div class="row g-2 mb-3">
+                             <div class="col-6"><input type="text" class="form-control rounded-4 py-3 bg-body-tertiary border-0 text-muted" value="Food" readonly></div>
+                             <div class="col-6"><input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0 cat-input" data-cat="Food"></div>
+                         </div>
+                         <div class="row g-2 mb-3">
+                             <div class="col-6"><input type="text" class="form-control rounded-4 py-3 bg-body-tertiary border-0 text-muted" value="Rent" readonly></div>
+                             <div class="col-6"><input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0 cat-input" data-cat="Rent"></div>
+                         </div>
+                         <div class="row g-2 mb-3">
+                             <div class="col-6"><input type="text" class="form-control rounded-4 py-3 bg-body-tertiary border-0 text-muted" value="Transport" readonly></div>
+                             <div class="col-6"><input type="number" class="form-control rounded-4 py-3 bg-body-tertiary border-0 cat-input" data-cat="Transport"></div>
+                         </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-soft mt-5">
+                        Save Monthly Plan
+                    </button>
+                    <p class="text-center text-secondary small mt-3">Changes will only apply to the selected month.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const now = new Date();
+    document.getElementById('selected-month').value = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    const fetchBudgetData = async () => {
+        const month = document.getElementById('selected-month').value;
+        try {
+            const bRes = await API.get('/budgets/?month=' + month);
+            const eRes = await API.get('/expenses/?start_date=' + month + '-01'); // Approximation for simplification
+            
+            const budgetData = bRes.data[0] || { total_budget: 0, category_budgets: {} };
+            const totalSpent = eRes.data.expenses.reduce((sum, e) => sum + e.amount, 0);
+            
+            // Total display
+            document.getElementById('total-budget').innerText = `₹${budgetData.total_budget.toLocaleString()}`;
+            document.getElementById('remaining-info').innerText = budgetData.total_budget > 0 
+                ? `₹${(budgetData.total_budget - totalSpent).toLocaleString()} remaining this month.` 
+                : 'No budget set for this month.';
+            
+            const alert = document.getElementById('usage-alert');
+            alert.classList.remove('d-none');
+            const perc = budgetData.total_budget > 0 ? (totalSpent / budgetData.total_budget) * 100 : 0;
+            if (perc >= 100) { 
+                alert.className = 'badge-custom badge-negative mt-4 mx-auto';
+                alert.innerText = 'OVER BUDGET';
+            } else if (perc >= 80) {
+                alert.className = 'badge-custom badge-forecasted mt-4 mx-auto';
+                alert.innerText = 'APPROACHING LIMIT';
+            } else {
+                alert.className = 'badge-custom badge-healthy mt-4 mx-auto';
+                alert.innerText = 'WITHIN LIMIT';
+            }
+
+            // Category breakdown
+            const list = document.getElementById('category-budget-list');
+            const cats = ['Food', 'Rent', 'Transport', 'Utilities', 'Shopping'];
+            list.innerHTML = cats.map(cat => {
+                const limit = budgetData.category_budgets[cat] || 0;
+                const spent = eRes.data.expenses.filter(e => e.category === cat).reduce((sum, e) => sum + e.amount, 0);
+                const perc = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+                const color = perc >= 100 ? 'bg-danger' : perc >= 80 ? 'bg-warning' : 'bg-primary';
+                
+                return `
+                    <div class="category-item mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                             <div class="d-flex align-items-center gap-2">
+                                <span class="small fw-bold text-body font-outfit uppercase tracking-widest">${cat}</span>
+                                <span class="badge bg-body-tertiary text-secondary small px-3 py-1 fw-bold rounded-pill">₹${spent.toLocaleString()} / ₹${limit.toLocaleString()}</span>
+                             </div>
+                             <span class="small fw-bold ${perc >= 100 ? 'text-danger' : 'text-primary'}">${perc.toFixed(1)}%</span>
+                        </div>
+                        <div class="progress rounded-pill overflow-hidden shadow-none bg-body-tertiary" style="height: 12px; border: 1px solid var(--card-border);">
+                            <div class="progress-bar rounded-pill ${color} shadow-sm" style="width: ${perc}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    document.getElementById('budget-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const month = document.getElementById('selected-month').value;
+        const total = document.getElementById('total_budget_input').value;
+        const catInputs = document.querySelectorAll('.cat-input');
+        const catBudgets = {};
+        catInputs.forEach(input => {
+            if (input.value) catBudgets[input.dataset.cat] = parseFloat(input.value);
+        });
+
+        try {
+            await API.post('/budgets/', { month, total_budget: total, category_budgets: catBudgets });
+            bootstrap.Modal.getInstance(document.getElementById('editBudgetModal')).hide();
+            fetchBudgetData();
+        } catch (err) { alert('Failed to update budget'); }
+    });
+
+    document.getElementById('selected-month').addEventListener('change', fetchBudgetData);
+    fetchBudgetData();
+</script>
+{% endblock %}

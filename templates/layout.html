@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExpenWise | Holographic Financial AI</title>
+    <meta name="description" content="ExpenWise – AI-powered expense forecasting with real-time holographic dashboards and smart financial insights.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <script>
+        // Set initial theme via blocking script to prevent flicker
+        (function() {
+            const saved = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', saved);
+            document.body.classList.add(saved + '-mode');
+        })();
+    </script>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--  HOLOGRAPHIC 3D CANVAS BACKGROUND              -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <canvas id="holo-canvas"></canvas>
+
+    <!-- Neon ambient orbs -->
+    <div class="bg-3d-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--  NAVBAR                                        -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-lg-5 px-4 py-1">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i data-lucide="trending-up" size="26" stroke-width="2.5"></i>
+                <span class="logo-text font-outfit fs-4">ExpenWise</span>
+            </a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-5">
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/"><i data-lucide="layout-dashboard" size="15" class="me-1"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/income"><i data-lucide="arrow-up-circle" size="15" class="me-1"></i>Income</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/expenses"><i data-lucide="credit-card" size="15" class="me-1"></i>Expenses</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link px-3 py-3 dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i data-lucide="bar-chart-3" size="15" class="me-1"></i>Investments
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg rounded-4 p-2">
+                            <li><a class="dropdown-item rounded-3 py-2 small fw-medium" href="/investments/stocks"><i data-lucide="bar-chart-2" size="15" class="me-2"></i>Stocks</a></li>
+                            <li><a class="dropdown-item rounded-3 py-2 small fw-medium" href="/investments/real-estate"><i data-lucide="home" size="15" class="me-2"></i>Real Estate</a></li>
+                            <li><a class="dropdown-item rounded-3 py-2 small fw-medium" href="/investments/crypto"><i data-lucide="coins" size="15" class="me-2"></i>Crypto</a></li>
+                            <li><hr class="dropdown-divider opacity-25"></li>
+                            <li><a class="dropdown-item rounded-3 py-2 small fw-medium" href="/investments/fixed-deposits"><i data-lucide="shield-check" size="15" class="me-2"></i>Fixed Deposits</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/budgets"><i data-lucide="pie-chart" size="15" class="me-1"></i>Budgets</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/goals"><i data-lucide="target" size="15" class="me-1"></i>Goals</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/reports"><i data-lucide="file-bar-chart" size="15" class="me-1"></i>Reports</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-3" href="/reviews"><i data-lucide="message-square" size="15" class="me-1"></i>Reviews</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <button id="sync-db-btn" class="btn d-flex align-items-center gap-2" title="Manual Backup to Cloud">
+                        <i data-lucide="cloud-lightning" size="17"></i>
+                        <span class="btn-text">Sync Cloud</span>
+                        <div id="sync-status-dot" class="ms-1" style="width: 7px; height: 7px; border-radius: 50%; display: none; background: #00f5ff; box-shadow: 0 0 8px #00f5ff;"></div>
+                    </button>
+                    <!-- ── THEME TOGGLE BUTTON ── -->
+                    <button id="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle dark/light theme"
+                            style="background: none; border: 1.5px solid rgba(128,128,200,0.3); border-radius: 999px; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.3s;">
+                        <span id="theme-icon-wrap" style="display:flex;align-items:center;">
+                            <i data-lucide="moon" id="theme-icon" size="16"></i>
+                        </span>
+                        <span id="theme-label" style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;">DARK</span>
+                    </button>
+                    <span id="user-name" class="text-secondary small fw-semibold d-none d-lg-block" style="font-family: 'Share Tech Mono', monospace; font-size: 12px;"></span>
+                    <button id="logout-btn" class="px-4 py-2 small fw-bold">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--  MAIN CONTENT                                  -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <main class="container-fluid px-lg-5 px-4 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!--  SCRIPTS                                       -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script>
+        lucide.createIcons();
+
+        // ══════════════════════════════════════════════════════════
+        //  THEME ENGINE — Dark / Light Toggle
+        // ══════════════════════════════════════════════════════════
+        const applyTheme = (theme) => {
+            const isDark = theme === 'dark';
+            // Bootstrap data attribute
+            document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+            // Body class (for custom CSS selectors)
+            document.body.classList.toggle('dark-mode',  isDark);
+            document.body.classList.toggle('light-mode', !isDark);
+            
+            // ── ENSURE BG ELEMENTS STAY VISIBLE ──
+            const canvas = document.getElementById('holo-canvas');
+            if (canvas) canvas.style.opacity = isDark ? '1' : '0.45'; // Faint in light mode
+            
+            const orbs = document.querySelector('.bg-3d-container');
+            if (orbs) orbs.style.opacity = isDark ? '1' : '0.25'; // Subtle orbs in light mode
+            
+            // Navbar toggle button UI
+            const icon  = document.getElementById('theme-icon');
+            const label = document.getElementById('theme-label');
+            if (icon && label) {
+                icon.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+                label.textContent = isDark ? 'DARK' : 'LIGHT';
+                lucide.createIcons();
+            }
+            // Persist
+            localStorage.setItem('theme', theme);
+            // Dispatch custom event so charts/widgets/canvas can react
+            window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
+        };
+
+        // Initial theme load
+        const _savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(_savedTheme);
+
+        // Toggle button
+        document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
+            const current = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // ── HOLOGRAPHIC 3D CANVAS ─────────────────────────────────
+        (function initHoloCanvas() {
+            const canvas = document.getElementById('holo-canvas');
+            const ctx = canvas.getContext('2d');
+            let isDarkMode = document.body.classList.contains('dark-mode');
+
+            window.addEventListener('themechange', (e) => {
+                isDarkMode = e.detail.theme === 'dark';
+            });
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Grid config
+            const HORIZON_Y    = canvas.height * 0.68;
+            let   gridOffset   = 0;
+
+            // Neon line graph data
+            const graphs = [
+                { color: '#ff00ff', lightColor: '#8b5cf6', shadow: 'rgba(255,0,255,0.7)', points: [], offset: 0,   speed: 0.8 },
+                { color: '#00f5ff', lightColor: '#6366f1', shadow: 'rgba(0,245,255,0.7)',  points: [], offset: 60,  speed: 0.6 },
+                { color: '#ffd700', lightColor: '#f59e0b', shadow: 'rgba(255,215,0,0.7)',  points: [], offset: 120, speed: 1.0 },
+            ];
+
+            // Generate smooth random walk points
+            function genPoints(seed, count) {
+                const pts = [];
+                let y = 0.5;
+                for (let i = 0; i < count; i++) {
+                    y += (Math.sin(i * 0.3 + seed) * 0.06) + (Math.random() - 0.5) * 0.04;
+                    y = Math.max(0.05, Math.min(0.95, y));
+                    pts.push(y);
+                }
+                return pts;
+            }
+            graphs.forEach((g, i) => { g.points = genPoints(i * 2.5, 120); });
+
+            let frame = 0;
+
+            function drawGrid() {
+                const w = canvas.width;
+                const h = canvas.height;
+                const hor = h * 0.68;
+                const vp  = { x: w / 2, y: hor };
+                
+                // Theme colors
+                const gridMain = isDarkMode ? '0, 245, 255' : '99, 102, 241';
+                const gridSub  = isDarkMode ? '168, 85, 247' : '14, 165, 233';
+
+                // Vertical perspective lines (converge to vanishing point)
+                const NUM_V = 16;
+                for (let i = 0; i <= NUM_V; i++) {
+                    const x = (i / NUM_V) * w;
+                    const grad = ctx.createLinearGradient(vp.x, hor, x, h);
+                    grad.addColorStop(0, `rgba(${gridMain}, 0)`);
+                    grad.addColorStop(1, i % 4 === 0 ? `rgba(${gridMain}, 0.35)` : `rgba(${gridSub}, 0.18)`);
+                    ctx.beginPath();
+                    ctx.moveTo(vp.x, hor);
+                    ctx.lineTo(x, h);
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth   = i % 4 === 0 ? 1.2 : 0.5;
+                    ctx.stroke();
+                }
+
+                // Horizontal receding lines with scroll offset
+                const NUM_H = 14;
+                gridOffset = (gridOffset + 0.35) % (h / NUM_H);
+                for (let i = 0; i <= NUM_H + 1; i++) {
+                    const progress = (i / NUM_H) + gridOffset / (h / NUM_H);
+                    const clampedP = progress % 1;
+                    const y = hor + Math.pow(clampedP, 1.5) * (h - hor);
+                    const lineWidth = clampedP * (w * 0.6);
+                    const lineX    = vp.x - lineWidth / 2;
+                    const alpha    = clampedP * (i % 3 === 0 ? 0.5 : 0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(lineX, y);
+                    ctx.lineTo(lineX + lineWidth, y);
+                    ctx.strokeStyle = i % 3 === 0
+                        ? `rgba(${gridMain}, ${alpha})`
+                        : `rgba(${gridSub}, ${alpha * 0.7})`;
+                    ctx.lineWidth = i % 3 === 0 ? 0.8 : 0.4;
+                    ctx.stroke();
+                }
+
+                // Glow horizon line
+                const horizGrad = ctx.createLinearGradient(0, hor, w, hor);
+                horizGrad.addColorStop(0,    `rgba(${gridMain}, 0)`);
+                horizGrad.addColorStop(0.15, isDarkMode ? `rgba(${gridSub}, 0.5)`  : 'rgba(139,92,246,0.25)');
+                horizGrad.addColorStop(0.5,  isDarkMode ? `rgba(${gridMain}, 0.8)` : 'rgba(99,102,241,0.5)');
+                horizGrad.addColorStop(0.85, isDarkMode ? `rgba(${gridSub}, 0.5)`  : 'rgba(139,92,246,0.25)');
+                horizGrad.addColorStop(1,    `rgba(${gridMain}, 0)`);
+                ctx.beginPath();
+                ctx.moveTo(0, hor);
+                ctx.lineTo(w, hor);
+                ctx.strokeStyle = horizGrad;
+                ctx.lineWidth   = 1.5;
+                ctx.shadowColor = isDarkMode ? `rgb(${gridMain})` : 'rgba(99,102,241,0.4)';
+                ctx.shadowBlur  = isDarkMode ? 14 : 6;
+                ctx.stroke();
+                ctx.shadowBlur  = 0;
+            }
+
+            function drawNeonGraphs() {
+                const w   = canvas.width;
+                const h   = canvas.height;
+                const hor = h * 0.68;
+                const graphH = hor * 0.45;
+                const graphY = hor * 0.15;
+
+                graphs.forEach((g, gi) => {
+                    const pts = g.points;
+                    const len = pts.length;
+                    const scrollIdx = (frame * g.speed * 0.3 + g.offset) % len;
+                    
+                    const drawColor = isDarkMode ? g.color : g.lightColor;
+
+                    ctx.beginPath();
+                    if (isDarkMode) {
+                        ctx.shadowColor = g.shadow;
+                        ctx.shadowBlur  = 22;
+                        ctx.lineWidth   = 2.2;
+                    } else {
+                        ctx.shadowBlur  = 0;
+                        ctx.lineWidth   = 1.5;
+                        ctx.globalAlpha = 0.65;
+                    }
+                    ctx.strokeStyle = drawColor;
+
+                    for (let i = 0; i < w; i += 3) {
+                        const dataIdx = (Math.floor(scrollIdx) + Math.floor(i / 3)) % len;
+                        const val     = pts[dataIdx];
+                        const x = i;
+                        const y = graphY + val * graphH;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else         ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur  = 0;
+                    ctx.globalAlpha = 1.0;
+
+                    // Area fill under each line
+                    ctx.beginPath();
+                    for (let i = 0; i <= w; i += 3) {
+                        const dataIdx = (Math.floor(scrollIdx) + Math.floor(i / 3)) % len;
+                        const val     = pts[dataIdx];
+                        const x = i;
+                        const y = graphY + val * graphH;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else         ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(w, hor);
+                    ctx.lineTo(0, hor);
+                    ctx.closePath();
+                    
+                    const fillColor = drawColor.replace('#', '');
+                    const r = parseInt(fillColor.slice(0,2), 16);
+                    const gr = parseInt(fillColor.slice(2,4), 16);
+                    const b = parseInt(fillColor.slice(4,6), 16);
+                    
+                    const areaGrad = ctx.createLinearGradient(0, graphY, 0, hor);
+                    areaGrad.addColorStop(0,   isDarkMode ? `rgba(${r},${gr},${b},0.10)` : `rgba(${r},${gr},${b},0.07)`);
+                    areaGrad.addColorStop(0.7, isDarkMode ? `rgba(${r},${gr},${b},0.03)` : `rgba(${r},${gr},${b},0.02)`);
+                    areaGrad.addColorStop(1,   `rgba(${r},${gr},${b},0.00)`);
+                    ctx.fillStyle = areaGrad;
+                    ctx.fill();
+                });
+                frame++;
+            }
+
+            function drawOverlayVignette() {
+                if (!isDarkMode) return; // No vignette in light mode
+                const w = canvas.width, h = canvas.height;
+                const grad = ctx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*0.9);
+                grad.addColorStop(0, 'rgba(2,5,16,0)');
+                grad.addColorStop(1, 'rgba(2,5,16,0.85)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawNeonGraphs();
+                drawGrid();
+                drawOverlayVignette();
+                frame++;
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+
+        // ── AUTH / USER ───────────────────────────────────────────
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        });
+
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) window.location.href = '/login';
+            else document.getElementById('user-name').textContent = '◈ ' + user.name;
+        }
+
+        // ── FIREBASE SYNC ─────────────────────────────────────────
+        const syncBtn = document.getElementById('sync-db-btn');
+        let needsSync = false;
+
+        const performSync = async () => {
+            if (!syncBtn) return;
+            const icon = syncBtn.querySelector('i');
+            const dot  = document.getElementById('sync-status-dot');
+            syncBtn.classList.add('syncing');
+            icon.setAttribute('data-lucide', 'refresh-cw');
+            icon.classList.add('spin-anim');
+            lucide.createIcons();
+            try {
+                await API.post('/sync/firebase-push');
+                needsSync = false;
+                if (dot) dot.style.display = 'none';
+                return true;
+            } catch (err) {
+                console.error(err);
+                return false;
+            } finally {
+                syncBtn.classList.remove('syncing');
+                icon.setAttribute('data-lucide', 'cloud-lightning');
+                icon.classList.remove('spin-anim');
+                lucide.createIcons();
+            }
+        };
+
+        syncBtn?.addEventListener('click', async () => {
+            const success = await performSync();
+            if (success) alert('✅ All ledgers securely synced to Firebase Cloud.');
+            else alert('⚠ Sync failed. Check your connection and try again.');
+        });
+
+        window.onbeforeunload = function() {
+            if (needsSync) return "Unsaved changes may be lost. Have you synced to cloud?";
+        };
+
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            return originalFetch.apply(this, arguments).then(res => {
+                if (['POST', 'PUT', 'DELETE'].includes(arguments[1]?.method) && res.ok && !arguments[0].includes('/sync/')) {
+                    needsSync = true;
+                    const dot = document.getElementById('sync-status-dot');
+                    if (dot) {
+                        dot.style.display = 'block';
+                        dot.style.animation = 'pulseSync 1.5s infinite';
+                    }
+                }
+                return res;
+            });
+        };
+
+        // ── GLOBAL CARD TILT EFFECT ───────────────────────────────
+        const initTilt = () => {
+            document.querySelectorAll('.floating-card').forEach(card => {
+                card.addEventListener('mousemove', e => {
+                    const r = card.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width  - 0.5;
+                    const y = (e.clientY - r.top)  / r.height - 0.5;
+                    card.style.transform = `translateY(-10px) rotateX(${-y*8}deg) rotateY(${x*8}deg) scale(1.015)`;
+                    card.style.transition = 'transform 0.1s ease-out';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(-2px) rotateX(0deg) rotateY(0deg) scale(1)';
+                    card.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                });
+            });
+        };
+        document.addEventListener('DOMContentLoaded', initTilt);
+        const observer = new MutationObserver(initTilt);
+        observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

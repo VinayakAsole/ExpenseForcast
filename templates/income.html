@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Income Management</h1>
+        <p class="text-secondary mt-1">Record and categorize your revenue streams with real-time tracking.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#incomeModal">
+             <i data-lucide="plus" size="18" class="me-2"></i> Add Income
+        </button>
+    </div>
+</div>
+
+<div class="floating-card overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-body-tertiary">
+                <tr>
+                    <th class="px-5 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">DATE</th>
+                    <th class="px-4 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">SOURCE</th>
+                    <th class="px-4 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">AMOUNT</th>
+                    <th class="px-5 py-4 small fw-bold text-secondary uppercase tracking-widest border-0 text-end">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="income-table" class="border-0">
+                <tr>
+                    <td colspan="4" class="text-center py-5">
+                        <div class="spinner-border text-primary opacity-50 mb-3" role="status"></div>
+                        <p class="text-secondary small fw-medium tracking-widest uppercase">Fetching revenue logs...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="incomeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg">
+             <div class="modal-header border-0 p-5 pb-0">
+                <h3 class="fw-bold font-outfit m-0">Record Income</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-5">
+                <form id="income-form" class="space-y-4">
+                    <input type="hidden" id="income-id">
+                    <div class="mb-4">
+                        <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Amount (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-tertiary border-0 rounded-start-4 px-3"><i data-lucide="indian-rupee" size="18" class="text-primary"></i></span>
+                            <input type="number" step="0.01" class="form-control rounded-end-4 py-3 bg-body-tertiary border-0" id="amount" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Source</label>
+                            <input type="text" id="source" class="form-control rounded-4 py-3 bg-body-tertiary border-0" placeholder="e.g. Salary, Freelance" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Date</label>
+                            <input type="date" class="form-control rounded-4 py-3 bg-body-tertiary border-0" id="date" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-soft mt-3">
+                        Save Income Record
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('date').valueAsDate = new Date();
+
+    const fetchIncome = async () => {
+        try {
+            const res = await API.get('/income/');
+            const table = document.getElementById('income-table');
+            table.innerHTML = res.data.map(inc => `
+                <tr class="animate-fade-in">
+                    <td class="px-5 py-4 text-secondary small fw-medium">${inc.date}</td>
+                    <td class="px-4 py-4 font-outfit fw-bold">${inc.source}</td>
+                    <td class="px-4 py-4 fw-bold text-success fs-5">₹${inc.amount.toLocaleString()}</td>
+                    <td class="px-5 py-4 text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button onclick='editIncome(${JSON.stringify(inc)})' class="btn btn-soft-primary btn-sm rounded-circle p-2 border-0">
+                                <i data-lucide="edit-3" size="16"></i>
+                            </button>
+                            <button onclick="deleteIncome('${inc.id}')" class="btn btn-soft-danger btn-sm rounded-circle p-2 border-0">
+                                <i data-lucide="trash-2" size="16"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center py-5"><p class="text-secondary opacity-50 m-0">No income records found.</p></td></tr>';
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    document.getElementById('income-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('income-id').value;
+        const payload = {
+            amount: e.target.amount.value,
+            source: e.target.source.value,
+            date: e.target.date.value
+        };
+
+        try {
+            if (id) {
+                await API.put('/income/' + id, payload);
+            } else {
+                await API.post('/income/', payload);
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('incomeModal'));
+            modal.hide();
+            e.target.reset();
+            document.getElementById('income-id').value = '';
+            fetchIncome();
+        } catch (err) {
+            alert('Operation failed');
+        }
+    });
+
+    const editIncome = (inc) => {
+        document.getElementById('income-id').value = inc.id;
+        document.getElementById('amount').value = inc.amount;
+        document.getElementById('source').value = inc.source;
+        document.getElementById('date').value = inc.date;
+        
+        const modal = new bootstrap.Modal(document.getElementById('incomeModal'));
+        document.querySelector('#incomeModal h3').innerText = 'Update Income';
+        modal.show();
+    };
+
+    const deleteIncome = async (id) => {
+        if (confirm('Permanently delete this income record?')) {
+            try {
+                await API.delete('/income/' + id);
+                fetchIncome();
+            } catch (err) {
+                alert('Deletion failed');
+            }
+        }
+    };
+
+    fetchIncome();
+</script>
+{% endblock %}

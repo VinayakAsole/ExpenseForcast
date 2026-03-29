@@ -1,0 +1,204 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Monthly Reports</h1>
+        <p class="text-secondary mt-1">Generate summarized financial statements and export your activity as CSV.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="d-flex gap-2 justify-content-md-end">
+            <input type="month" id="selected-month" class="form-control rounded-pill border-0 shadow-sm w-auto px-4"
+                value="{{ current_month }}">
+            <button id="export-csv" class="btn btn-primary rounded-pill px-4" disabled>
+                <i data-lucide="file-text" size="18" class="me-2"></i> CSV
+            </button>
+            <button id="export-pdf" class="btn btn-primary rounded-pill px-4" disabled>
+                <i data-lucide="file" size="18" class="me-2"></i> PDF
+            </button>
+            <button id="print-btn" class="btn btn-outline-primary rounded-pill px-4" disabled>
+                <i data-lucide="printer" size="18" class="me-2"></i> Print
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="report-content" class="row g-4 mb-5">
+    <div class="col-12 text-center py-5">
+        <h3 class="text-secondary opacity-50">Select a month to load report...</h3>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script>
+    const now = new Date();
+    document.getElementById('selected-month').value = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    const fetchReport = async () => {
+        const month = document.getElementById('selected-month').value;
+        try {
+            const { data } = await API.get('/reports/?month=' + month);
+            const container = document.getElementById('report-content');
+            document.getElementById('export-csv').disabled = false;
+            document.getElementById('export-pdf').disabled = false;
+            document.getElementById('print-btn').disabled = false;
+
+            container.innerHTML = `
+                <div class="col-lg-3">
+                    <div class="floating-card p-4 text-center">
+                        <p class="text-secondary small fw-bold uppercase tracking-widest mb-1">TOTAL INCOME</p>
+                        <h2 class="fw-bold font-outfit m-0" style="color: var(--success); text-shadow: 0 0 10px rgba(57,255,20,0.3);">₹${data.summary.total_income.toLocaleString()}</h2>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="floating-card p-4 text-center">
+                        <p class="text-secondary small fw-bold uppercase tracking-widest mb-1">TOTAL EXPENSE</p>
+                        <h2 class="fw-bold font-outfit m-0" style="color: var(--danger); text-shadow: 0 0 10px rgba(255,45,85,0.3);">₹${data.summary.total_expense.toLocaleString()}</h2>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="floating-card p-4 text-center">
+                        <p class="text-secondary small fw-bold uppercase tracking-widest mb-1">NET SAVINGS</p>
+                        <h2 class="fw-bold font-outfit m-0" style="color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0,245,255,0.3);">₹${data.summary.net_savings.toLocaleString()}</h2>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="floating-card p-4 text-center">
+                        <p class="text-secondary small fw-bold uppercase tracking-widest mb-1">E/I RATIO</p>
+                        <h2 class="fw-bold font-outfit m-0" style="color: var(--neon-purple); text-shadow: 0 0 10px rgba(168,85,247,0.3);">${data.summary.expense_to_income_ratio}</h2>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mt-4">
+                    <div class="floating-card p-5 h-100">
+                        <h4 class="section-heading mb-4">Expense Distribution</h4>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 fw-medium small">
+                                <thead class="bg-body-tertiary">
+                                    <tr><th class="border-0 px-4 py-3">CATEGORY</th><th class="border-0 px-4 py-3 text-end">TOTAL SPENT</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${data.category_summary.map(cat => `
+                                        <tr>
+                                            <td class="px-4 py-3 border-0"><span class="badge-custom badge-forecasted px-3 py-1">${cat.name}</span></td>
+                                            <td class="px-4 py-3 border-0 text-end fw-bold">₹${cat.total.toLocaleString()}</td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="2" class="text-center">No expenses in this period.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mt-4">
+                     <div class="floating-card p-5 h-100">
+                        <h4 class="section-heading mb-4">Month Highlights</h4>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-body-tertiary rounded-4 border-start border-info border-4">
+                                <p class="m-0 small">Monthly transactions recorded: <strong>${data.expenses.length}</strong></p>
+                            </div>
+                            <div class="p-4 bg-body-tertiary rounded-4 border-start border-success border-4">
+                                <p class="m-0 small">Income entries recorded: <strong>${data.incomes.length}</strong></p>
+                            </div>
+                             <div class="p-4 bg-body-tertiary rounded-4 border-start border-primary border-4">
+                                <p class="m-0 small">Most frequent category: <strong>${data.category_summary[0]?.name || 'N/A'}</strong></p>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+            `;
+
+            window.currentReportData = data;
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const exportPDF = () => {
+        const { jsPDF } = window.jspdf;
+        const data = window.currentReportData;
+        if (!data) return;
+
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(99, 102, 241); // Primary Color
+        doc.text("ExpenWise Financial Report", 20, 25);
+
+        doc.setFontSize(12);
+        doc.setTextColor(148, 163, 184); // Secondary
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 32);
+        doc.text(`Reporting Month: ${data.month}`, 20, 38);
+
+        // Summary Section
+        doc.setDrawColor(99, 102, 241);
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, pageWidth - 20, 45);
+
+        doc.setFontSize(14);
+        doc.setTextColor(15, 23, 42); // Dark
+        doc.text("Financial Summary", 20, 55);
+
+        doc.setFontSize(11);
+        doc.text(`Total Income: ${data.summary.total_income.toLocaleString()} Rupees`, 20, 65);
+        doc.text(`Total Expense: ${data.summary.total_expense.toLocaleString()} Rupees`, 20, 72);
+        doc.text(`Net Savings: ${data.summary.net_savings.toLocaleString()} Rupees`, 20, 79);
+        doc.text(`Expense/Income Ratio: ${data.summary.expense_to_income_ratio}`, 20, 86);
+
+        // Transactions Table
+        doc.setFontSize(14);
+        doc.text("Transaction History", 20, 100);
+
+        const tableHeaders = [["Date", "Type", "Category/Source", "Amount", "Notes"]];
+        const tableRows = [
+            ...data.expenses.map(e => [e.date, "Expense", e.category, `${e.amount.toLocaleString()} INR`, e.notes || "-"]),
+            ...data.incomes.map(i => [i.date, "Income", i.source, `${i.amount.toLocaleString()} INR`, "-"])
+        ];
+
+        doc.autoTable({
+            startY: 105,
+            head: tableHeaders,
+            body: tableRows,
+            theme: 'striped',
+            headStyles: { fillColor: [99, 102, 241] },
+            styles: { fontSize: 9 }
+        });
+
+        doc.save(`ExpenWise_Report_${data.month}.pdf`);
+    };
+
+    document.getElementById('export-csv').addEventListener('click', () => {
+        const data = window.currentReportData;
+        if (!data) return;
+
+        const headers = ["Date", "Type", "Category/Source", "Amount", "Notes"];
+        const rows = [
+            ...data.expenses.map(e => [e.date, "Expense", e.category, e.amount, e.notes]),
+            ...data.incomes.map(i => [i.date, "Income", i.source, i.amount, ""])
+        ];
+
+        let csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `ExpenWise_Report_${data.month}.csv`);
+        document.body.appendChild(link);
+        link.click();
+    });
+
+    document.getElementById('export-pdf').addEventListener('click', exportPDF);
+    document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+    document.getElementById('selected-month').addEventListener('change', fetchReport);
+    fetchReport();
+</script>
+{% endblock %}

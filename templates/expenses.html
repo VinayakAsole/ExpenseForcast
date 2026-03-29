@@ -1,0 +1,179 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-center mb-5">
+    <div class="col-md-8">
+        <h1 class="display-6 fw-bold font-outfit m-0">Daily Expenses</h1>
+        <p class="text-secondary mt-1">Track and manage every transaction with holographic precision.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+             <i data-lucide="plus" size="18" class="me-2"></i> Add Transaction
+        </button>
+    </div>
+</div>
+
+<div class="floating-card overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-body-tertiary">
+                <tr>
+                    <th class="px-5 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">DATE</th>
+                    <th class="px-4 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">CATEGORY</th>
+                    <th class="px-4 py-4 small fw-bold text-secondary uppercase tracking-widest border-0">AMOUNT</th>
+                    <th class="px-4 py-4 small fw-bold text-secondary uppercase tracking-widest border-0 text-center">NOTES</th>
+                    <th class="px-5 py-4 small fw-bold text-secondary uppercase tracking-widest border-0 text-end">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="expense-table" class="border-0">
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <div class="spinner-border text-primary opacity-50 mb-3" role="status"></div>
+                        <p class="text-secondary small fw-medium tracking-widest uppercase">Fetching activity logs...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-5 shadow-lg overflow-hidden">
+             <div class="modal-header border-0 p-5 pb-0">
+                <h3 class="fw-bold font-outfit m-0 tracking-tight">Record Transaction</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-5">
+                <form id="expense-form" class="space-y-4">
+                    <input type="hidden" id="expense-id">
+                    <div class="mb-4">
+                        <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Amount (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-tertiary border-0 rounded-start-4 px-3"><i data-lucide="indian-rupee" size="18" class="text-primary"></i></span>
+                            <input type="number" step="0.01" class="form-control rounded-end-4 py-3 bg-body-tertiary border-0" id="amount" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Category</label>
+                            <select class="form-select rounded-4 py-3 bg-body-tertiary border-0 shadow-none px-3" id="category" required>
+                                <option value="Food">Food</option>
+                                <option value="Rent">Rent</option>
+                                <option value="Transport">Transport</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Investment">Investment</option>
+                                <option value="Education">Education</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Date</label>
+                            <input type="date" class="form-control rounded-4 py-3 bg-body-tertiary border-0 shadow-none px-3" id="date" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="small fw-bold text-secondary mb-2 uppercase tracking-widest">Notes (Optional)</label>
+                        <textarea class="form-control rounded-4 py-3 bg-body-tertiary border-0 shadow-none px-3" id="notes" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-soft">
+                        Save Transaction History
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('date').valueAsDate = new Date();
+
+    const fetchExpenses = async () => {
+        try {
+            const res = await API.get('/expenses/');
+            const table = document.getElementById('expense-table');
+            table.innerHTML = res.data.expenses.map(exp => `
+                <tr class="animate-fade-in">
+                    <td class="px-5 py-4 text-secondary small fw-medium">${exp.date}</td>
+                    <td class="px-4 py-4"><span class="badge-custom badge-forecasted px-3 py-1 font-outfit" style="font-size: 0.75rem;">${exp.category}</span></td>
+                    <td class="px-4 py-4 fw-bold font-inter fs-5">₹${exp.amount.toLocaleString()}</td>
+                    <td class="px-4 py-4 text-center text-secondary small"><span class="text-truncate d-inline-block" style="max-width: 150px;">${exp.notes || '-'}</span></td>
+                    <td class="px-5 py-4 text-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button onclick='editExpense(${JSON.stringify(exp)})' class="btn btn-soft-primary btn-sm rounded-circle p-2 border-0">
+                                <i data-lucide="edit-3" size="16"></i>
+                            </button>
+                            <button onclick="deleteExpense('${exp.id}')" class="btn btn-soft-danger btn-sm rounded-circle p-2 border-0">
+                                <i data-lucide="trash-2" size="16"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" class="text-center py-5"><p class="text-secondary opacity-50 m-0">No expenses recorded yet.</p></td></tr>';
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    document.getElementById('expense-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('expense-id').value;
+        const payload = {
+            amount: e.target.amount.value,
+            category: e.target.category.value,
+            date: e.target.date.value,
+            notes: e.target.notes.value
+        };
+
+        try {
+            if (id) {
+                await API.put('/expenses/' + id, payload);
+            } else {
+                await API.post('/expenses/', payload);
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addExpenseModal'));
+            modal.hide();
+            e.target.reset();
+            document.getElementById('expense-id').value = '';
+            fetchExpenses();
+        } catch (err) {
+            alert('Operation failed');
+        }
+    });
+
+    const editExpense = (exp) => {
+        document.getElementById('expense-id').value = exp.id;
+        document.getElementById('amount').value = exp.amount;
+        document.getElementById('category').value = exp.category;
+        document.getElementById('date').value = exp.date;
+        document.getElementById('notes').value = exp.notes;
+        
+        const modal = new bootstrap.Modal(document.getElementById('addExpenseModal'));
+        document.querySelector('.modal-title')?.innerText || (document.querySelector('#addExpenseModal h3').innerText = 'Update Transaction');
+        modal.show();
+    };
+
+    const deleteExpense = async (id) => {
+        if (confirm('Permanently delete this transaction?')) {
+            try {
+                await API.delete('/expenses/' + id);
+                fetchExpenses();
+            } catch (err) {
+                alert('Deletion failed');
+            }
+        }
+    };
+
+    fetchExpenses();
+</script>
+{% endblock %}

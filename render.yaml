@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: expense-forecast-system
+    env: python
+    buildCommand: "pip install -r requirements.txt && python models/db.py"
+    startCommand: "gunicorn app:app"
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true

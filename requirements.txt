@@ -1,0 +1,11 @@
+flask
+flask-cors
+bcrypt
+python-dotenv
+pandas
+numpy
+scikit-learn
+flask-jwt-extended
+requests
+gunicorn
+yfinance

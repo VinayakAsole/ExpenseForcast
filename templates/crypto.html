@@ -1,0 +1,262 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .pulse-glow {
+        animation: pulseEffect 2s infinite;
+    }
+    @keyframes pulseEffect {
+        0% { filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0)); }
+        50% { filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5)); }
+        100% { filter: drop-shadow(0 0 0 rgba(99, 102, 241, 0)); }
+    }
+    
+    .price-update-flash {
+        transition: color 0.2s ease-in-out;
+    }
+    .price-up { color: #10b981 !important; transform: scale(1.02); }
+    .price-down { color: #ef4444 !important; transform: scale(1.02); }
+
+    .market-status-badge {
+        font-size: 10px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .search-orb-crypto {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 999px;
+        padding: 12px 24px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    .search-orb-crypto input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 100%;
+        font-weight: 500;
+        color: var(--dark);
+    }
+</style>
+
+<div class="row mb-4 animate-3d">
+    <div class="col-12 text-center">
+        <h2 class="display-6 fw-bold font-outfit mb-3">Crypto <span class="text-primary pulse-glow">Live Engine</span></h2>
+        
+        <div class="search-orb-crypto mb-4">
+            <i data-lucide="search" size="20" class="text-primary"></i>
+            <input type="text" id="crypto-search" placeholder="Search Crypto (e.g. BTC, ETH, SOL, DOGE)...">
+            <kbd class="bg-light text-muted border px-2 py-1 rounded small">Enter</kbd>
+        </div>
+
+        <div class="d-flex justify-content-center align-items-center gap-2">
+            <span class="market-status-badge">● LIVE WEBSOCKET ACTIVE</span>
+            <div id="connection-status" class="small fw-medium text-success">Connected</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- BTC -->
+    <div class="col-md-3">
+        <div class="floating-card p-4 stat-card-health">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon-box stat-icon-health bg-primary bg-opacity-10">
+                    <i data-lucide="bitcoin" size="24" class="text-primary"></i>
+                </div>
+                <h5 class="mb-0 fw-bold">Bitcoin</h5>
+            </div>
+            <div id="price-btcusdt" class="stat-number fs-2 mb-1 price-update-flash">--</div>
+            <div class="stat-title uppercase tracking-widest text-muted">BTC / USDT</div>
+        </div>
+    </div>
+    <!-- ETH -->
+    <div class="col-md-3">
+        <div class="floating-card p-4 stat-card-forecast">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon-box bg-info bg-opacity-10">
+                    <i data-lucide="component" size="24" class="text-info"></i>
+                </div>
+                <h5 class="mb-0 fw-bold">Ethereum</h5>
+            </div>
+            <div id="price-ethusdt" class="stat-number fs-2 mb-1 price-update-flash">--</div>
+            <div class="stat-title uppercase tracking-widest text-muted">ETH / USDT</div>
+        </div>
+    </div>
+    <!-- BNB -->
+    <div class="col-md-3">
+        <div class="floating-card p-4 stat-card-savings border-top-0" style="border-top: 3px solid var(--success) !important;">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon-box bg-success bg-opacity-10">
+                    <i data-lucide="coins" size="24" class="text-success"></i>
+                </div>
+                <h5 class="mb-0 fw-bold">Binance</h5>
+            </div>
+            <div id="price-bnbusdt" class="stat-number fs-2 mb-1 price-update-flash">--</div>
+            <div class="stat-title uppercase tracking-widest text-muted">BNB / USDT</div>
+        </div>
+    </div>
+    <!-- Dynamic / Searched -->
+    <div class="col-md-3">
+        <div class="floating-card p-4 stat-card-spent border-top-0" style="border-top: 3px solid var(--danger) !important;">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon-box bg-danger bg-opacity-10">
+                    <i data-lucide="zap" size="24" class="text-danger"></i>
+                </div>
+                <h5 id="search-coin-name" class="mb-0 fw-bold">Solana</h5>
+            </div>
+            <div id="price-search" class="stat-number fs-2 mb-1 price-update-flash">--</div>
+            <div id="search-coin-symbol" class="stat-title uppercase tracking-widest text-muted">SOL / USDT</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="glass-card p-0 shadow-lg border-0 overflow-hidden" style="height: 600px;">
+            <div id="tradingview_crypto" style="height: 100%; width: 100%;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="floating-card p-4 border-0 bg-dark text-white" style="height: 600px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-info"><i data-lucide="terminal" class="me-2"></i> Live Price Logs</h5>
+                <span class="badge bg-primary rounded-pill small" id="log-counter">0 msgs</span>
+            </div>
+            <div id="ws-log" class="small opacity-75 font-monospace" style="height: 520px; overflow-y: auto; scroll-behavior: smooth; line-height: 1.6;">
+                <div class="text-info">[Engine-Init] Starting Secure WebSocket...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12">
+        <div class="chart-card mb-4">
+            <h5 class="section-heading mb-4"><i data-lucide="activity" class="me-2 text-primary"></i> Market Watch (Stream)</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th class="border-0 small uppercase text-muted">Coin</th>
+                            <th class="border-0 small uppercase text-muted text-end px-4">Live Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ws-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    let tvWidget = null;
+    let currentSearchSym = 'SOLUSDT';
+
+    function initTV(symbol = "BINANCE:BTCUSDT") {
+        const isDark = !document.body.classList.contains('light-mode');
+        document.getElementById('tradingview_crypto').innerHTML = '';
+        tvWidget = new TradingView.widget({
+            "autosize": true,
+            "symbol": symbol,
+            "interval": "1",
+            "timezone": "Asia/Kolkata",
+            "theme": isDark ? "dark" : "light",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": isDark ? "#050e23" : "#f8faff",
+            "enable_publishing": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview_crypto"
+        });
+    }
+
+    // Listen for theme toggle custom event
+    window.addEventListener('themechange', (e) => {
+        const currentSym = tvWidget ? tvWidget.options?.symbol || "BINANCE:BTCUSDT" : "BINANCE:BTCUSDT";
+        setTimeout(() => initTV(currentSym), 50);
+    });
+
+    const streamSymbols = ['btcusdt', 'ethusdt', 'bnbusdt', 'solusdt', 'adausdt', 'xrpusdt', 'dotusdt', 'dogeusdt', 'avaxusdt', 'linkusdt', 'maticusdt', 'shibusdt'];
+    const streamUrl = `wss://stream.binance.com:9443/ws/${streamSymbols.map(s => s + '@ticker').join('/')}`;
+    
+    let ws = new WebSocket(streamUrl);
+    const lastPrices = {};
+    let logMsgCount = 0;
+
+    function log(msg, color = 'white') {
+        logMsgCount++;
+        const logBox = document.getElementById('ws-log');
+        const entry = document.createElement('div');
+        entry.style.color = color;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logBox.prepend(entry);
+        document.getElementById('log-counter').innerText = `${logMsgCount} msgs`;
+        if (logBox.childNodes.length > 50) logBox.lastChild.remove();
+    }
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const symbol = data.s.toLowerCase();
+        const price = parseFloat(data.c);
+        
+        if (logMsgCount % 8 === 0) log(`DATA: ${data.s} @ $${price.toFixed(4)}`, '#60a5fa');
+
+        const cardId = symbol === currentSearchSym.toLowerCase() ? 'price-search' : `price-${symbol}`;
+        const cardEl = document.getElementById(cardId);
+        
+        if (cardEl) {
+            const oldPrice = lastPrices[symbol] || 0;
+            cardEl.innerText = '$' + price.toLocaleString(undefined, {minimumFractionDigits: (price < 1 ? 4 : 2)});
+            if (price > oldPrice) { cardEl.classList.add('price-up'); setTimeout(() => cardEl.classList.remove('price-up'), 500); }
+            else if (price < oldPrice) { cardEl.classList.add('price-down'); setTimeout(() => cardEl.classList.remove('price-down'), 500); }
+        }
+
+        lastPrices[symbol] = price;
+        updateTable();
+    };
+
+    function updateTable() {
+        const tbody = document.getElementById('ws-table-body');
+        tbody.innerHTML = '';
+        streamSymbols.forEach(sym => {
+            const price = lastPrices[sym] || 0;
+            if (price > 0) {
+                tbody.innerHTML += `<tr><td><span class="fw-bold">${sym.toUpperCase().replace('USDT','')}</span></td><td class="text-end px-4 fw-bold text-primary">$${price.toLocaleString(undefined,{minimumFractionDigits:(price<1?4:2)})}</td></tr>`;
+            }
+        });
+    }
+
+    function searchCrypto(sym) {
+        if (!sym) return;
+        const upperSym = sym.toUpperCase().replace('USDT', '');
+        currentSearchSym = upperSym + 'USDT';
+        
+        document.getElementById('search-coin-name').innerText = upperSym;
+        document.getElementById('search-coin-symbol').innerText = upperSym + ' / USDT';
+        document.getElementById('price-search').innerText = '--';
+        
+        initTV(`BINANCE:${currentSearchSym}`);
+        log(`Searching: ${currentSearchSym}...`, '#f59e0b');
+    }
+
+    document.getElementById('crypto-search').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchCrypto(e.target.value);
+    });
+
+    initTV();
+    ws.onopen = () => log('Real-time Node Active.', '#10b981');
+</script>
+{% endblock %}
